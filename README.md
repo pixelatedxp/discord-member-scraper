@@ -249,7 +249,7 @@ If you have problems:
 4. Check Python and discord.py are installed correctly
 
 For bugs or issues, you **may** DM me.
-**Discord**: `pixelatedxpert`
+[My Discord](http://discord.com/users/1009828837141528696)
 
 ---
 
@@ -266,7 +266,7 @@ Things I might add later:
 
 Made by **pixelatedxpert**  
 GitHub: https://github.com/pixelatedxpert
-**Discord**: `pixelatedxpert`
+[My Discord](http://discord.com/users/1009828837141528696)
 
 This tool was created for server admins who need to backup their member lists.
 
