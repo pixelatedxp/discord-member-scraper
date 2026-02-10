@@ -248,8 +248,7 @@ If you have problems:
 3. Verify you have access to the server
 4. Check Python and discord.py are installed correctly
 
-For bugs or issues, visit:  
-https://github.com/pixelatedxpert/discord-scraper/issues
+For bugs or issues, you **may** DM me.
 **Discord**: `pixelatedxpert`
 
 ---
