@@ -69,15 +69,15 @@ This script helps you collect user IDs from a Discord server. It goes through al
 
 ```bash
 # Download the code
-git clone https://github.com/pixelatedxp/discord-scraper.git
+git clone https://github.com/pixelatedxp/discord-member-scraper.git
 
 # Go to the folder
-cd discord-scraper
+cd discord-member-scraper
 
-# Install what you need
-pip install discord.py
+# Install required packages
+pip install -r requirements.txt
 
-# Run it
+# Run the script
 python main.py
 ```
 
