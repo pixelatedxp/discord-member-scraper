@@ -69,7 +69,7 @@ This script helps you collect user IDs from a Discord server. It goes through al
 
 ```bash
 # Download the code
-git clone https://github.com/pixelatedxpert/discord-scraper.git
+git clone https://github.com/pixelatedxp/discord-scraper.git
 
 # Go to the folder
 cd discord-scraper
@@ -88,7 +88,7 @@ python main.py
 When you run the script, it will ask you a few questions:
 
 ### 1. Your Discord Token
-This is like a password for your account. You can find it in your browser's developer tools.
+You can find it in your browser's developer tools.
 
 ### 2. Server ID
 The unique number for the Discord server you want to scan.
@@ -218,22 +218,18 @@ Discord has rules about how fast you can make requests:
 
 1. **Use a separate account** if possible, not your main account
 2. **Don't run multiple scrapers** at the same time
-3. **Be respectful** - don't overload servers you don't own
-4. **Keep the data private** - user IDs are sensitive information
-5. **Check server rules** - some servers don't allow scraping
+3. **Be respectful** - try not to scrape servers you don't own
+4. **Try To Keep the data private** - user IDs are sensitive information
 
 ---
 
-## Questions & Answers
+## FAQ
 
 **Q: Is this legal?**  
 A: The code is legal, but using it violates Discord's Terms of Service.
 
 **Q: Will I definitely get banned?**  
 A: Not definitely, but it's a risk. Use at your own risk.
-
-**Q: Can I use this for my bot?**  
-A: Yes, but use a bot account instead of a user account for that.
 
 **Q: Does it download messages?**  
 A: No, only user IDs. No message content is saved.
@@ -254,13 +250,13 @@ If you have problems:
 
 For bugs or issues, visit:  
 https://github.com/pixelatedxpert/discord-scraper/issues
+**Discord**: `pixelatedxpert`
 
 ---
 
 ## Future Plans
 
 Things I might add later:
-- Web interface to make it easier to use
 - Better progress display with estimates
 - Option to export to CSV format
 - Filtering options (by date, activity, etc.)
@@ -271,8 +267,9 @@ Things I might add later:
 
 Made by **pixelatedxpert**  
 GitHub: https://github.com/pixelatedxpert
+**Discord**: `pixelatedxpert`
 
-This tool was created for server admins who need to backup their member lists or analyze server growth.
+This tool was created for server admins who need to backup their member lists.
 
 ---
 
