@@ -262,7 +262,7 @@ Things I might add later:
 
 ---
 
-## About The Developer
+## About Me
 
 Made by **pixelatedxpert**  
 GitHub: https://github.com/pixelatedxpert
