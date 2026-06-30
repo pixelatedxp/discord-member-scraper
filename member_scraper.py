@@ -111,7 +111,7 @@ async def scrape_messages(guild, channel, mes_depth, is_welcome, curr_member_lis
     return curr_message
 
 
-def get_top_channels(guild, member, channels, top_n=5):
+async def get_top_channels(guild, member, channels, top_n=5):
     ratings = {}
     for ch in channels:
         if ch.type in (discord.ChannelType.category, discord.ChannelType.forum):

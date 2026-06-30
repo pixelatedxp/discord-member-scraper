@@ -1,6 +1,6 @@
 # Discord Member Scraper
 
-Scrapes user IDs from a Discord server's message history, threads, and welcome logs.
+Scrapes user IDs from a Discord server via message history, threads, and welcome logs.
 
 **Warning**: This uses a self-bot, which violates Discord's ToS. Your account can be permanently banned. For educational use only.
 
