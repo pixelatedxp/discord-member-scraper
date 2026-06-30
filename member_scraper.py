@@ -6,6 +6,7 @@ import asyncio
 import discord
 from discord.ext import commands
 
+CONFIG_PATH = "config.json"
 FETCH_MEMBER_DELAY = 0.45
 TOKEN_PATTERN = r'[MNO][a-zA-Z\d_-]{23,25}\.[a-zA-Z\d_-]{6}\.[a-zA-Z\d_-]{27}'
 
@@ -16,45 +17,79 @@ if sys.platform == 'win32':
     asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
 
 
-def init_config(guild_id: str):
+def log(msg: str):
+    print(f"[+] {msg}")
+
+
+def err(msg: str):
+    print(f"[-] {msg}")
+
+
+def load_config():
+    if not os.path.exists(CONFIG_PATH):
+        return None
+    try:
+        with open(CONFIG_PATH, 'r') as f:
+            cfg = json.load(f)
+        required = ["token", "guild_id", "welcome_channel_id", "only_members", "stop_early", "message_depth"]
+        if not all(k in cfg for k in required):
+            err("Config file is missing fields. Run interactively or fix config.json.")
+            return None
+        log(f"Loaded config from {CONFIG_PATH}")
+        return cfg
+    except (json.JSONDecodeError, IOError) as e:
+        err(f"Failed to load config: {e}")
+        return None
+
+
+def save_config(cfg: dict):
+    try:
+        with open(CONFIG_PATH, 'w') as f:
+            json.dump(cfg, f, indent=2)
+        log(f"Config saved to {CONFIG_PATH}")
+    except IOError as e:
+        err(f"Failed to save config: {e}")
+
+
+def init_scrape_progress(guild_id: str):
     data = {'user-ids': [], 'current-channel': None, 'current-message': None}
     path = f"{guild_id}.json"
     if not os.path.exists(path):
         with open(path, 'w') as f:
             json.dump(data, f)
-        print(f"Created config file {path}.")
+        log(f"Created progress file {path}.")
     elif os.path.getsize(path) == 0:
-        print("File exists but is empty. Refilling.")
+        log("Progress file exists but is empty. Refilling.")
         with open(path, 'w') as f:
             json.dump(data, f)
     else:
-        print("File exists.")
+        log("Progress file exists.")
 
 
 def get_inputs():
-    guild_id = input("Input the Guild ID that will be scraped for user ids: ")
+    guild_id = input("[?] Input the Guild ID that will be scraped for user ids: ")
     if not guild_id.strip().isnumeric():
-        print("Invalid Guild ID: Non numeric input.")
+        err("Invalid Guild ID: Non numeric input.")
         sys.exit(1)
 
-    welcome_channel_id = input("ID of the welcome channel (type a letter if there is none): ")
+    welcome_channel_id = input("[?] ID of the welcome channel (type a letter if there is none): ")
     if not welcome_channel_id.strip().isnumeric():
-        print("Welcome channel id isn't valid, will assume there is none.")
+        log("Welcome channel id isn't valid, will assume there is none.")
         welcome_channel_id = None
 
-    fetch_question = input("Save only current server members? [Y/n]: ")
+    fetch_question = input("[?] Save only current server members? [Y/n]: ")
     only_members = fetch_question.lower().startswith("y")
 
-    stop_question = input("Stop within 150 members of cache? [Y/n]: ")
+    stop_question = input("[?] Stop within 150 members of cache? [Y/n]: ")
     stop_early = stop_question.lower().startswith("y")
 
-    depth_raw = input("How many messages deep per channel (1000-40000, 'n' for no limit): ")
+    depth_raw = input("[?] How many messages deep per channel (1000-40000, 'n' for no limit): ")
     message_depth = parse_depth(depth_raw)
 
-    user_token = input("Input user token: ")
+    user_token = input("[?] Input user token: ")
     if not re.match(TOKEN_PATTERN, user_token):
-        print("Bad User Token format detected.")
-        answer = input("Continue with bad token? [Yes/No]: ").lower().strip()
+        err("Bad User Token format detected.")
+        answer = input("[?] Continue with bad token? [Yes/No]: ").lower().strip()
         if answer != "yes":
             sys.exit(1)
 
@@ -66,16 +101,16 @@ def parse_depth(raw: str):
     if raw == "n":
         return None
     if not raw.isnumeric():
-        print("Invalid input, defaulting to 1000.")
+        log("Invalid input, defaulting to 1000.")
         return 1000
     val = int(raw)
     if val < 1000:
-        print("Defaulting to 1000 depth.")
+        log("Defaulting to 1000 depth.")
         return 1000
     if val > 40000:
-        print("Defaulting to 40000 depth.")
+        log("Defaulting to 40000 depth.")
         return 40000
-    print(f"Using depth {val}.")
+    log(f"Using depth {val}.")
     return val
 
 
@@ -93,7 +128,7 @@ async def scrape_messages(guild, channel, mes_depth, is_welcome, curr_member_lis
                 if only_members:
                     await guild.fetch_member(message.author.id)
                     await asyncio.sleep(FETCH_MEMBER_DELAY)
-                print(f"New member added: {message.author.name} | Count: {len(curr_member_list) + 1}")
+                log(f"New member added: {message.author.name} | Count: {len(curr_member_list) + 1}")
                 curr_member_list.append(message.author.id)
 
             if is_welcome and message.author.bot:
@@ -102,12 +137,12 @@ async def scrape_messages(guild, channel, mes_depth, is_welcome, curr_member_lis
                         await guild.fetch_member(mention.id)
                         await asyncio.sleep(FETCH_MEMBER_DELAY)
                     if mention.id not in curr_member_list:
-                        print(f"New member from welcome bot mention: {mention.name} | Count: {len(curr_member_list) + 1}")
+                        log(f"New member from welcome bot mention: {mention.name} | Count: {len(curr_member_list) + 1}")
                         curr_member_list.append(mention.id)
         except discord.NotFound:
             not_in_guild_list.append(message.author.id)
         except (discord.Forbidden, discord.HTTPException) as e:
-            print(f"Failed to fetch user: {e}.")
+            err(f"Failed to fetch user: {e}.")
     return curr_message
 
 
@@ -126,7 +161,7 @@ async def get_top_channels(guild, member, channels, top_n=5):
         try:
             result.append(await guild.fetch_channel(ch_id))
         except (discord.Forbidden, discord.HTTPException) as e:
-            print(f"Failed to fetch channel {ch_id}: {e} (skipping).")
+            err(f"Failed to fetch channel {ch_id}: {e} (skipping).")
     return result
 
 
@@ -154,19 +189,18 @@ async def build_channel_list(guild, member, tep, welcome_channel_id):
                 wc = await guild.fetch_channel(wid)
                 if wc.type != discord.ChannelType.category:
                     channels_to_scrape.insert(0, wc)
-                    print(f"Force-added welcome channel: {wc.name}")
+                    log(f"Force-added welcome channel: {wc.name}")
                 else:
-                    print("Welcome channel is a category, skipping.")
+                    log("Welcome channel is a category, skipping.")
             except Exception as e:
-                print(f"Could not fetch welcome channel: {e}.")
+                err(f"Could not fetch welcome channel: {e}.")
 
     return channels_to_scrape
 
 
 @bot.event
 async def on_ready():
-    print(f"Logged in as {bot.user.name} in {len(bot.guilds)} guilds.")
-    print("Console is logging only -- no commands available.")
+    log(f"Logged in as {bot.user.name} in {len(bot.guilds)} guilds.")
     guild_obj = await fetch_guild_by_id(guild_id)
     if guild_obj:
         await scrape_users(guild_obj)
@@ -174,29 +208,29 @@ async def on_ready():
 
 async def fetch_guild_by_id(gid: str):
     if not gid.strip().isnumeric():
-        print("Invalid guild ID.")
+        err("Invalid guild ID.")
         return None
     try:
         guild = await bot.fetch_guild(int(gid))
-        print(f"Scraping guild {guild.name}")
+        log(f"Scraping guild {guild.name}")
         return guild
     except discord.Forbidden:
-        print("Failed to fetch guild: No access.")
+        err("Failed to fetch guild: No access.")
     except discord.HTTPException:
-        print("Failed to fetch guild: HTTP Exception.")
+        err("Failed to fetch guild: HTTP Exception.")
     return None
 
 
 async def scrape_users(guild: discord.Guild):
     global stop
-    init_config(str(guild.id))
+    init_scrape_progress(str(guild.id))
 
     member = await guild.fetch_member(bot.user.id)
 
     try:
         channels = await guild.fetch_channels()
     except (discord.InvalidData, discord.HTTPException) as e:
-        print(f"Failed to fetch guild channels: {e}.")
+        err(f"Failed to fetch guild channels: {e}.")
         channels = None
 
     good_channels = await get_top_channels(guild, member, channels) if channels else []
@@ -217,10 +251,10 @@ async def scrape_users(guild: discord.Guild):
                 if m.id != bot.user.id:
                     curr_member_list.append(m.id)
         except Exception as e:
-            print(f"Error during member scraping: {e}")
-            print("Continuing with message scraping...")
+            err(f"Error during member scraping: {e}")
+            log("Continuing with message scraping...")
     else:
-        print("No valid channels for member scraping, continuing with message scraping...")
+        log("No valid channels for member scraping, continuing with message scraping...")
 
     new_channels = await guild.fetch_channels()
     tep = []
@@ -228,11 +262,11 @@ async def scrape_users(guild: discord.Guild):
         try:
             tep.append(await guild.fetch_channel(ch.id))
         except discord.Forbidden:
-            print(f"Failed to fetch channel {ch.name}: Forbidden.")
+            err(f"Failed to fetch channel {ch.name}: Forbidden.")
             continue
 
     channels_to_scrape = await build_channel_list(guild, member, tep, welcome_channel_id)
-    print(f"Channels to scrape: {len(channels_to_scrape)}")
+    log(f"Channels to scrape: {len(channels_to_scrape)}")
 
     not_in_guild_list = []
     curr_channel = None
@@ -246,7 +280,7 @@ async def scrape_users(guild: discord.Guild):
                 if ch.id != curr_channel_id:
                     continue
                 find_curr_channel = False
-                print("Found the last channel!")
+                log("Found the last channel!")
 
             curr_channel = ch.id
             mes_depth = message_depth
@@ -254,14 +288,14 @@ async def scrape_users(guild: discord.Guild):
 
             if is_welcome_ch:
                 mes_depth = None
-                print(f"\nScraping welcome channel: {ch.name}")
+                log(f"Scraping welcome channel: {ch.name}")
 
             if stop_early and guild.member_count > 250:
                 if guild.member_count - len(curr_member_list) < 151:
                     stop = True
                     break
 
-            print(f"Scraping channel {ch.name} for members.")
+            log(f"Scraping channel {ch.name} for members.")
 
             if find_curr_message:
                 try:
@@ -270,12 +304,12 @@ async def scrape_users(guild: discord.Guild):
                         guild, ch, mes_depth, is_welcome_ch, curr_member_list, not_in_guild_list, only_members, before=before_msg
                     )
                 except discord.NotFound:
-                    print("Couldn't find the last message.")
+                    err("Couldn't find the last message.")
                     curr_message = await scrape_messages(
                         guild, ch, mes_depth, is_welcome_ch, curr_member_list, not_in_guild_list, only_members
                     )
                 except (discord.Forbidden, discord.HTTPException) as e:
-                    print(f"Failed to find last message: {e}.")
+                    err(f"Failed to find last message: {e}.")
                     curr_message = await scrape_messages(
                         guild, ch, mes_depth, is_welcome_ch, curr_member_list, not_in_guild_list, only_members
                     )
@@ -285,20 +319,20 @@ async def scrape_users(guild: discord.Guild):
                 )
 
         label = "members" if only_members else "users"
-        print(f"Scraped {len(curr_member_list)} {label}, saving to {guild.id}.json.")
-        print(f"Server cache reports {guild.member_count} current members.")
+        log(f"Scraped {len(curr_member_list)} {label}, saving to {guild.id}.json.")
+        log(f"Server cache reports {guild.member_count} current members.")
         data['user-ids'] = curr_member_list
         stop = True
         with open(f"{guild.id}.json", 'w') as f:
             json.dump(data, f)
 
     except Exception as e:
-        print(f"Failed: {e}")
+        err(f"Failed: {e}")
         save_progress(guild.id, curr_member_list, curr_channel, curr_message)
     finally:
         if not stop:
             save_progress(guild.id, curr_member_list, curr_channel, curr_message)
-            print("Restarting in 5 seconds.")
+            log("Restarting in 5 seconds.")
             await asyncio.sleep(5)
             await scrape_users(guild=guild)
 
@@ -311,12 +345,50 @@ def save_progress(guild_id, member_list, channel, message):
     }
     with open(f"{guild_id}.json", 'w') as f:
         json.dump(data, f)
-    print(f"Progress saved to {guild_id}.json.")
+    log(f"Progress saved to {guild_id}.json.")
 
 
 def main():
     global guild_id, welcome_channel_id, only_members, stop_early, message_depth, user_token
+
+    cfg = load_config()
+    if cfg and cfg.get("auto_start"):
+        log("Auto-start enabled, using saved config.")
+        guild_id = cfg["guild_id"]
+        welcome_channel_id = cfg["welcome_channel_id"]
+        only_members = cfg["only_members"]
+        stop_early = cfg["stop_early"]
+        message_depth = cfg["message_depth"]
+        user_token = cfg["token"]
+        bot.run(user_token)
+        return
+
+    if cfg:
+        answer = input("[?] Use saved config? [Y/n]: ").lower().strip()
+        if answer in ("", "y", "yes"):
+            guild_id = cfg["guild_id"]
+            welcome_channel_id = cfg["welcome_channel_id"]
+            only_members = cfg["only_members"]
+            stop_early = cfg["stop_early"]
+            message_depth = cfg["message_depth"]
+            user_token = cfg["token"]
+            bot.run(user_token)
+            return
+
     guild_id, welcome_channel_id, only_members, stop_early, message_depth, user_token = get_inputs()
+
+    save_ans = input("[?] Save these settings to config.json? [Y/n]: ").lower().strip()
+    if save_ans in ("", "y", "yes"):
+        save_config({
+            "token": user_token,
+            "guild_id": guild_id,
+            "welcome_channel_id": welcome_channel_id,
+            "only_members": only_members,
+            "stop_early": stop_early,
+            "message_depth": message_depth,
+            "auto_start": False
+        })
+
     bot.run(user_token)
 
 

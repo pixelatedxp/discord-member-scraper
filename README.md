@@ -4,18 +4,34 @@ Scrapes user IDs from a Discord server via message history, threads, and welcome
 
 **Warning**: This uses a self-bot, which violates Discord's ToS. Your account can be permanently banned. For educational use only.
 
+## Config File
+
+Create a `config.json` next to the script to skip prompts on every run:
+
+```json
+{
+  "token": "your_token_here",
+  "guild_id": "123456789",
+  "welcome_channel_id": null,
+  "only_members": false,
+  "stop_early": false,
+  "message_depth": 1000,
+  "auto_start": false
+}
+```
+
+- Set `auto_start` to `true` to skip all prompts and start immediately.
+- Set `welcome_channel_id` to a channel ID or `null`.
+- `message_depth` can be a number (1000-40000) or `null` for no limit.
+
+If no config file exists, you'll be prompted interactively and asked whether to save your settings.
+
 ## Quick Start
 
 ```
 pip install -r requirements.txt
 python member_scraper.py
 ```
-
-You'll be prompted for:
-- Your Discord user token
-- The server (guild) ID
-- An optional welcome channel ID
-- Message depth per channel (1000-40000, or no limit)
 
 ## Output
 
